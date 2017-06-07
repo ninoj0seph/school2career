@@ -8,6 +8,19 @@ class FetchSchools{
         $queryStart =     "SELECT s.uid, s.name, s.city, s.state, s.lat, s.lng, s.url, s.size, s.adm_rate, s.sat_avg ";
         $queryMiddle =    "FROM `schools` s ";
         $queryEnd = isset($this->data['mapBounds']) && isset($this->data['latLng'])
+            ? "WHERE (
+                        `lat` BETWEEN 
+                                      ".floatval($this->data['mapBounds']['sw']['lat'])." 
+                                      AND 
+                                      ".floatval($this->data['mapBounds']['ne']['lat'])."
+                     ) AND (
+                        `lng` BETWEEN 
+                                      ".floatval($this->data['mapBounds']['sw']['lng'])." 
+                                      AND 
+                                      ".floatval($this->data['mapBounds']['ne']['lng'])."
+                     ) AND "
+            : "WHERE     " ;
+        $queryEndFormatted = isset($this->data['mapBounds']) && isset($this->data['latLng'])
             ? "WHERE (`lat` BETWEEN ".floatval($this->data['mapBounds']['sw']['lat'])." AND  ".floatval($this->data['mapBounds']['ne']['lat']).") AND (`lng` BETWEEN ".floatval($this->data['mapBounds']['sw']['lng'])." AND ".floatval($this->data['mapBounds']['ne']['lng']).") AND "
             : "WHERE " ;
         $this->filters = [];
@@ -20,35 +33,44 @@ class FetchSchools{
             array_push($tables, "pts", 'programs');
             $this->filters[] = ' Major';
             $queryEnd .=      'p.external="'.addslashes($this->data['pickAMajor']).'" AND ';
+            $queryEndFormatted .=      'p.external="'.addslashes($this->data['pickAMajor']).'" AND ';
         }
         if (isset($this->data['tuitionSlider'])){ //This block never fires on Landing Page since there is no slider
-            $this->filters[] = ' Tuition';
-            if ($tuition_sanitized = floatval($this->data['tuitionSlider']))
-                $queryEnd .=      "s.tuition_out<$tuition_sanitized AND ";
 
+            if ($tuition_sanitized = floatval($this->data['tuitionSlider'])) {
+                $this->filters[] = ' Tuition';
+                $queryEnd .= "s.tuition_out<$tuition_sanitized AND ";
+                $queryEndFormatted .= "s.tuition_out<$tuition_sanitized AND ";
+            }
             if ($this->data['private'] === true && $this->data['public'] === false){
                 $this->filters[] = ' Public';
                 $queryEnd .=          "s.ownership<>1 AND ";
+                $queryEndFormatted .=          "s.ownership<>1 AND ";
             } else if ($this->data['public'] === true && $this->data['private'] === false){
                 $this->filters[] = ' Private';
                 $queryEnd .=          "s.ownership=1 AND ";
+                $queryEndFormatted .=          "s.ownership=1 AND ";
             }
             if ($this->data['voc'] === false){
                 $this->filters[] = ' Vocational';
                 $queryEnd .=      "s.vocational=0 AND ";
+                $queryEndFormatted .=      "s.vocational=0 AND ";
             }
             if ($this->data['aa'] === false){
-                array_push($tables, "pts", 'programs');
                 $this->filters[] = ' Associates';
+                array_push($tables, "pts", 'programs');
                 $queryEnd .=      "pts.deg_2=0 AND ";
+                $queryEndFormatted .=      "pts.deg_2=0 AND ";
             }
             if ($this->data['bs'] === false){
-                array_push($tables, "pts", 'programs');
                 $this->filters[] = ' Bachelors';
+                array_push($tables, "pts", 'programs');
                 $queryEnd .=      "pts.deg_4=0 AND ";
+                $queryEndFormatted .=      "pts.deg_4=0 AND ";
             }
         }
         $queryEnd = substr($queryEnd,0,-4)."GROUP BY s.uid";
+        $queryEndFormatted = substr($queryEndFormatted,0,-4)."GROUP BY s.uid";
 
         $uniqueTables = array_keys(array_flip($tables));
         while($tablesToJoin = array_shift($uniqueTables)){
@@ -56,6 +78,7 @@ class FetchSchools{
         }
 
         $this->fullQuery = $queryStart.$queryMiddle.$queryEnd;
+        $this->formattedQuery = $queryStart.$queryMiddle.$queryEndFormatted;
     }
 
     public $output = ['status' => []];
@@ -83,15 +106,15 @@ class FetchSchools{
                 }
                 usort($this->output['schools'], array($this, "cmp"));
                 $this->output['schools'] = array_slice($this->output['schools'],0,100,true);
-                $this->output['debug']['results'] = count($this->output['schools']);
-                unset($this->output['schools']);
+                $this->output['debug']['total results'] = count($this->output['schools']);
             } else {
                 $this->output['status'] = "200 - Search returned zero results";
             }
         }
-        $this->output['debug']['filters'] = $this->filters;
         $this->output['debug']['request'] = $this->data;
-        $this->output['debug']['query'] = $this->fullQuery;
+        $this->output['debug']['filters'] = $this->filters;
+        $this->output['debug']['full query'] = $this->fullQuery;
+        $this->output['debug']['formatted query'] = $this->formattedQuery;
         $dbConn->close();
         return $this->output;
     }
