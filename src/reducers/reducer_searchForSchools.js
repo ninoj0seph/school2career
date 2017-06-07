@@ -8,6 +8,7 @@ const defaultState = {
 };
 //reducer for getting all schools, getting one school and for showing the loader, also handles no schools.
 export default function(state = defaultState, action){
+    console.log("debug:",action.payload.data.debug);
     switch(action.type){
         case FETCH_SCHOOLS:
             return { ...state, all: action.payload.data.schools, noSchool: action.payload.data.errors, showLoader: false };
