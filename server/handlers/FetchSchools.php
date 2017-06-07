@@ -42,27 +42,28 @@ class FetchSchools{
                 $queryEnd .= "s.tuition_out<$tuition_sanitized AND ";
                 $queryEndFormatted .= "s.tuition_out<$tuition_sanitized AND ";
             }
-            if ($this->data['private'] === true && $this->data['public'] === false){
+            if ($this->data['public'] === false || $this->data['public'] === "false"){
                 $this->filters[] = ' Public';
                 $queryEnd .=          "s.ownership<>1 AND ";
                 $queryEndFormatted .=          "s.ownership<>1 AND ";
-            } else if ($this->data['public'] === true && $this->data['private'] === false){
+            }
+            if ($this->data['private'] === false || $this->data['private'] === "false"){
                 $this->filters[] = ' Private';
                 $queryEnd .=          "s.ownership=1 AND ";
                 $queryEndFormatted .=          "s.ownership=1 AND ";
             }
-            if ($this->data['voc'] === false){
+            if ($this->data['voc'] === false || $this->data['voc'] === "false"){
                 $this->filters[] = ' Vocational';
                 $queryEnd .=      "s.vocational=0 AND ";
                 $queryEndFormatted .=      "s.vocational=0 AND ";
             }
-            if ($this->data['aa'] === false){
+            if ($this->data['aa'] === false || $this->data['aa'] === "false"){
                 $this->filters[] = ' Associates';
                 array_push($tables, "pts", 'programs');
                 $queryEnd .=      "pts.deg_2=0 AND ";
                 $queryEndFormatted .=      "pts.deg_2=0 AND ";
             }
-            if ($this->data['bs'] === false){
+            if ($this->data['bs'] === false || $this->data['bs'] === "false"){
                 $this->filters[] = ' Bachelors';
                 array_push($tables, "pts", 'programs');
                 $queryEnd .=      "pts.deg_4=0 AND ";
